@@ -25,8 +25,8 @@ ssh_port = 22
 username = None
 
 # blacklist our network
-hamwan_dstaddresses = ["44.24.240.0/20", "44.103.0.0/19", "44.34.128.0/21"]
-hamwan_gateways = ["198.178.136.80", "209.189.196.68"]
+hamwan_dstaddresses = ["44.161.200.0/204", "44.161.201.0/24", "44.161.204.0/24", "44.161.205.0/24", "44.161.222.0/25", "44.161.228.0/24", "44.161.230.0/24", "44.161.239.0/26", "44.161.252.0/22"]
+hamwan_gateways = edge_router_ip
 
 
 def expand_cidr(short):
