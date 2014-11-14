@@ -15,15 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import time
 import paramiko
 import socket
 import sys
 
-edge_router_ip = "198.178.136.80"
+edge_router_ip = sys.argv[-1]
 ssh_port = 22
-username = ""
-hamwan_dstaddresses = ["44.24.240.0/20", ]
-hamwan_gateways = ["198.178.136.80", ]
+username = None
+
+# blacklist our network
+hamwan_dstaddresses = ["44.24.240.0/20", "44.103.0.0/19", "44.34.128.0/21"]
+hamwan_gateways = ["198.178.136.80", "209.189.196.68"]
 
 
 def expand_cidr(short):
@@ -54,8 +57,6 @@ def parse_encap(line):
     if (dstaddress in hamwan_dstaddresses) or (gateway in hamwan_gateways):
         return False
 
-    # return "/ip route add dst-address=%s gateway=ampr-%s" % (
-    #     dstaddress, gateway)
     return (dstaddress, gateway)
 
 
@@ -124,19 +125,15 @@ def main():
 
         unchanged = 0
         routes_to_add = set(encap_routes)
-        routes_to_remove = list(ros_routes)
-        ipips_to_remove = list(ros_ipips)
+        routes_to_remove = set(ros_routes)
+        ipips_to_remove = set(ros_ipips)
         for (dstaddress, gateway) in encap_routes:
             interface = "ampr-%s" % gateway
             if (dstaddress, interface) in ros_routes and \
                (interface, gateway) in ros_ipips:
-                routes_to_add.remove((dstaddress, gateway))
-                routes_to_remove.remove((dstaddress, interface))
-                try:
-                    ipips_to_remove.remove((interface, gateway))
-                except ValueError:
-                    # ignore multiple routes per interface
-                    pass
+                routes_to_add.discard((dstaddress, gateway))
+                routes_to_remove.discard((dstaddress, interface))
+                ipips_to_remove.discard((interface, gateway))
                 unchanged += 1
 
         commands = []
@@ -150,19 +147,21 @@ def main():
         if ipips_to_remove:
             commands.append("# removing orphaned ipip interfaces")
         for interface, gateway in ipips_to_remove:
-            commands.append("/interfaces ipip remove %s" % interface)
+            commands.append("/interface ipip remove %s" % interface)
 
         if routes_to_add:
             commands.append("# adding new and modified routes")
         for dstaddress, interface in routes_to_add:
-            commands.append("/interface ipip add local-address=192.178.136.80 name=ampr-%s remote-address=%s" % (interface, interface))
-            commands.append("/ip route add dst-address=%s gateway=ampr-%s" % (dstaddress, interface))
+            commands.append("/interface ipip add local-address=%s name=ampr-%s remote-address=%s" % (edge_router_ip, interface, interface))
+            commands.append("/ip route add dst-address=%s gateway=ampr-%s distance=30" % (dstaddress, interface))
+            commands.append("/ip neighbor discovery set ampr-%s discover=no" % (interface))
 
         if "-v" in sys.argv:
             print "\n".join(commands)
         if "-n" not in sys.argv:
             for command in commands:
                 ssh.exec_command(command)
+                time.sleep(0.1)
     except socket.timeout:
         print "timeout"
     finally:
