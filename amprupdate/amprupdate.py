@@ -28,6 +28,8 @@ username = None
 hamwan_dstaddresses = ["44.161.200.0/204", "44.161.201.0/24", "44.161.204.0/24", "44.161.205.0/24", "44.161.222.0/25", "44.161.228.0/24", "44.161.230.0/24", "44.161.239.0/26", "44.161.252.0/22"]
 hamwan_gateways = edge_router_ip
 
+# define distance for routes added
+distance = 30
 
 def expand_cidr(short):
     ip, mask = short.split("/")
@@ -153,7 +155,7 @@ def main():
             commands.append("# adding new and modified routes")
         for dstaddress, interface in routes_to_add:
             commands.append("/interface ipip add !keepalive clamp-tcp-mss=yes local-address=%s name=ampr-%s remote-address=%s" % (edge_router_ip, interface, interface))
-            commands.append("/ip route add dst-address=%s gateway=ampr-%s distance=30" % (dstaddress, interface))
+            commands.append("/ip route add dst-address=%s gateway=ampr-%s distance=%s" % (dstaddress, interface, distance))
             commands.append("/ip neighbor discovery set ampr-%s discover=no" % (interface))
 
         if "-v" in sys.argv:
