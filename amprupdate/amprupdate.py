@@ -25,8 +25,8 @@ ssh_port = 22
 username = None
 
 # blacklist our network
-hamwan_dstaddresses = ["44.24.240.0/20", "44.103.0.0/19", "44.34.128.0/21"]
-hamwan_gateways = ["198.178.136.80", "209.189.196.68"]
+hamwan_dstaddresses = ["44.161.200.0/204", "44.161.201.0/24", "44.161.204.0/24", "44.161.205.0/24", "44.161.222.0/25", "44.161.228.0/24", "44.161.230.0/24", "44.161.239.0/26", "44.161.252.0/22"]
+hamwan_gateways = edge_router_ip
 
 # define distance for routes added
 distance = 30
@@ -149,12 +149,12 @@ def main():
         if ipips_to_remove:
             commands.append("# removing orphaned ipip interfaces")
         for interface, gateway in ipips_to_remove:
-            commands.append("/interface ipip remove %s" % interface)
+            commands.append("/interface ipip remove [find name=%s]" % interface)
 
         if routes_to_add:
             commands.append("# adding new and modified routes")
         for dstaddress, interface in routes_to_add:
-            commands.append("/interface ipip add local-address=%s name=ampr-%s remote-address=%s" % (edge_router_ip, interface, interface))
+            commands.append("/interface ipip add !keepalive clamp-tcp-mss=yes local-address=%s name=ampr-%s remote-address=%s" % (edge_router_ip, interface, interface))
             commands.append("/ip route add dst-address=%s gateway=ampr-%s distance=%s" % (dstaddress, interface, distance))
             commands.append("/ip neighbor discovery set ampr-%s discover=no" % (interface))
 
