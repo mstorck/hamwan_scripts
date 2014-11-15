@@ -26,10 +26,10 @@ username = None
 
 # blacklist our network
 hamwan_dstaddresses = ["44.161.200.0/204", "44.161.201.0/24", "44.161.204.0/24", "44.161.205.0/24", "44.161.222.0/25", "44.161.228.0/24", "44.161.230.0/24", "44.161.239.0/26", "44.161.252.0/22"]
-hamwan_gateways = edge_router_ip
+hamwan_gateways = [edge_router_ip, "127.0.0.1"]
 
 # define distance for routes added
-distance = 30
+distance = 210
 
 def expand_cidr(short):
     ip, mask = short.split("/")
